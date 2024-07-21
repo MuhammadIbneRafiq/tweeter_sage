@@ -1,72 +1,81 @@
-import streamlit as st
-import pandas as pd
-import asyncio
-import concurrent.futures
-from ntscraper import Nitter
-from streamlit_chat import message
+# # tools.py
+# import os
+# from crawl4ai import WebCrawler
+# from crawl4ai.extraction_strategy import LLMExtractionStrategy
+# from pydantic import BaseModel, Field
+# from praisonai_tools import BaseTool
 
-# Function to initialize Nitter scraper asynchronously
-def init_nitter():
-    return Nitter(0)
+# class ModelFee(BaseModel):
+#     tweet_description: str = Field(..., description="Description of the tweet.")
+#     tweet_id: str = Field(..., description="Unique identifier for the tweet.")
+#     top_4_posts: list[str] = Field(..., description="List of top 4 posts related to the tweet.")
+#     username: str = Field(..., description="Username of the person who posted the tweet.")
+#     tweet_url: str = Field(..., description="URL of the tweet.")
 
-async def async_init_nitter():
-    loop = asyncio.get_event_loop()
-    with concurrent.futures.ThreadPoolExecutor() as pool:
-        result = await loop.run_in_executor(pool, init_nitter)
-    return result
+# class ModelFeeTool(BaseTool):
+#     name: str = "ModelFeeTool"
+#     description: str = "A tool to extract information from tweets about hiring UI/UX designers."
 
-async def fetch_tweets(scraper, name, mode, number):
-    loop = asyncio.get_event_loop()
-    tweets = await loop.run_in_executor(None, scraper.get_tweets, name, mode, number)
-    return tweets
+#     def _run(self, url: str):
+#         crawler = WebCrawler()
+#         crawler.warmup()
 
-def get_tweet_data(tweets):
-    final_tweets = []
-    for x in tweets['tweets']:
-        data = [x['link'], x['text'], x['date'], x['stats']['likes'], x['stats']['comments']]
-        final_tweets.append(data)
-    return pd.DataFrame(final_tweets, columns=['twitter_link', 'text', 'date', 'likes', 'comments'])
+#         # Get the API token
+#         api_token = os.getenv('GROQ_API_KEY')
+#         if not api_token:
+#             raise ValueError("GROQ_API_KEY environment variable is not set")
 
-async def main():
-    st.set_page_config(page_title="Freelancer Finder", layout="wide")
+#         print(f"Using API Token: {api_token}")  # Debugging log
 
-    # Title and Sidebar
-    st.title("Meet AutoLanding AI, Your Personal Agent to Find Affordable and Talented Freelancers")
+#         result = crawler.run(
+#             url=url,
+#             word_count_threshold=1,
+#             extraction_strategy=LLMExtractionStrategy(
+#                 provider="groq/llama3-8b-8192", 
+#                 api_token=api_token, 
+#                 # schema=ModelFee.schema(),
+#                 # extraction_type="schema",
+#                 instruction="""You are an intelligent text extraction and conversion assistant. Your task is to extract structured information 
+#                         from the given text and convert it into a pure JSON format. The JSON should contain only the structured data extracted from the text, 
+#                         with no additional commentary, explanations, or extraneous information. 
+#                         You could encounter cases where you can't find the data of the fields you have to extract or the data will be in a foreign language.
+#                         Extract the following information from the twitter post that matches the description 'hiring ui/ux designer', 
+#                         keep in mind the hiring part is important. 
+#                         keep in mind the information about these fields might not be obvious but try to get them by analyzing the context"""
+#             ),            
+#             bypass_cache=True,
+#         )
 
-    st.sidebar.image("./twitter_scraped_client.png", use_column_width=True)
+#         # More detailed logging
+#         print(f"Extraction Result: {result}")
+#         if result.error_message:
+#             print(f"Error Message: {result.error_message}")
 
-    # Initialize session state
-    if 'messages' not in st.session_state:
-        st.session_state['messages'] = []
+#         if result.extracted_content is None:
+#             print("Extracted content is None")
 
-    with st.spinner("Initializing scraper..."):
-        scraper = await async_init_nitter()
+#         return result.extracted_content
 
-    # Main chat interface
-    st.subheader("Chats")
+# if __name__ == "__main__":
+#     # Test the ModelFeeTool
+#     tool = ModelFeeTool()
+#     url = "https://x.com/search?q=hiring%20ui%2Fux%20designers&src=typed_query&f=top"
+#     result = tool.run(url)
+#     print(result)
 
-    chat_input = st.text_input("Type a keyword and press Enter", "")
-    if chat_input:
-        st.session_state.messages.append(chat_input)
-        chat_input = ""
+import requests
+from bs4 import BeautifulSoup
 
-    if st.session_state.messages:
-        for msg in st.session_state.messages:
-            message(msg, is_user=True)
+def beautifulsoup_web_scrape_url(url):
+    response = requests.get(url)
+    soup = BeautifulSoup(response.content, 'html.parser')
+    return str(soup)
 
-            with st.spinner("Fetching data..."):
-                tweets = await fetch_tweets(scraper, msg, 'hashtag', 5)
-                data = get_tweet_data(tweets)
+# url = "https://x.com/search?q=hiring%20ui%2Fux%20designers&src=typed_query&f=top"
+    url = 'https://www.linkedin.com/search/results/all/?keywords=hiring%20ui%2Fux%20designer&origin=GLOBAL_SEARCH_HEADER&sid=d2Z'
+def jinaai_readerapi_web_scrape_url(url):
+  response = requests.get("https://r.jina.ai/" + url)
+  return response.text
 
-            if not data.empty:
-                for i, row in data.iterrows():
-                    st.write(f"**{row['date']}**")
-                    st.write(row['text'])
-                    st.write(f"Likes: {row['likes']} | Comments: {row['comments']}")
-                    st.write(f"[Link to Tweet]({row['twitter_link']})")
-                    st.write("---")
-            else:
-                st.warning("No tweets found for the given query.")
-
-if __name__ == "__main__":
-    asyncio.run(main())
+data = jinaai_readerapi_web_scrape_url(url)
+print(data)
