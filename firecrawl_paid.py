@@ -28,6 +28,10 @@ def scrape_data(url):
     else:
         raise KeyError("The key 'markdown' does not exist in the scraped data.")
     
+q = scrape_data('https://www.skool.com/ai-automation-agency-hub-8466?c=ae064b712f48404ca2b74634461c360e&s=newest-cm&fl=&p=3')
+print('tihs is ', q)
+    
+    
 def save_raw_data(raw_data, timestamp, output_folder='output'):
     # Ensure the output folder exists
     os.makedirs(output_folder, exist_ok=True)
@@ -43,17 +47,20 @@ def format_data(data, fields=None):
     # Instantiate the OpenAI client
     # Assign default fields if not provided
     if fields is None:
-        fields = ["tweet_description", "tweet id", "top 4 posts", "username", "Tweet URL"]
+        fields = ["post description", "who are they looking to hire", "link of the post", "top 5 posts", "username", "details post description", "top 5 comments from the post"]
 
     # Define system message content
     system_message = f"""You are an intelligent text extraction and conversion assistant. Your task is to extract structured information 
-                        from the given text and convert it into a pure JSON format. The JSON should contain only the structured data extracted from the text, 
+                        from the given data file and convert it into a pure JSON format. The JSON should contain only the structured data extracted from the text, 
                         with no additional commentary, explanations, or extraneous information. 
                         You could encounter cases where you can't find the data of the fields you have to extract or the data will be in a foreign language.
-                        Extract the following information from the twitter post that matches the description 'hiring ui/ux designer', keep in mind the hiring part is important. from the provided text:\nPage content:\n\n{data}\n\nInformation to extract: {fields}. keep in mind the information about these fields might not be obvious but try to get them by analyzing the context"""
+                        Extract the following information from the twitter post that matches the description 'hiring ui/ux designer', 
+                        keep in mind the hiring part is important. from the provided text:\nPage content:\n\n{data}\n\n
+                        Information to extract: {fields}. keep in mind the information about these fields might not be obvious but 
+                        try to get them by analyzing the context"""
 
     # Define user message content
-    user_message = f"Extract the following information from the twitter post that matches the description 'hiring ui/ux designer', keep in mind the hiring part is important. from the provided text:\nPage content:\n\n{data}\n\nInformation to extract: {fields}. keep in mind the information about these fields might not be obvious but try to get them by analyzing the context"
+    user_message = f"first identify whether its from skool commpunity post or linkedin feed then Extract the following information that matches the any description of hiring roles in any niche, keep in mind the hiring part is important. from the provided text:\nPage content:\n\n{data}\n\nInformation to extract: {fields}. keep in mind the information about these fields might not be obvious but try to get them by analyzing the context"
 
 
     response = client.chat.completions.create(
@@ -119,26 +126,28 @@ def save_formatted_data(formatted_data, timestamp, output_folder='output'):
     df.to_excel(excel_output_path, index=False)
     print(f"Formatted data saved to Excel at {excel_output_path}")
 
-if __name__ == "__main__":
-    # Scrape a single URL
-    #url = 'https://www.zillow.com/salt-lake-city-ut/'
-    url = """https://www.linkedin.com/search/results/all/?keywords=hiring%20ui%2Fux%20designer&origin=GLOBAL_SEARCH_HEADER&sid=d2Z"""
-    #url = 'https://www.seloger.com/immobilier/achat/immo-lyon-69/'
+# if __name__ == "__main__":
+#     # Scrape a single URL
+#     #url = 'https://www.zillow.com/salt-lake-city-ut/'
+#     # url = """https://www.linkedin.com/search/results/all/?keywords=hiring%20ui%2Fux%20designer&origin=GLOBAL_SEARCH_HEADER&sid=d2Z"""
+#     #url = 'https://www.seloger.com/immobilier/achat/immo-lyon-69/'
     
-    try:
-        # Generate timestamp
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+#     url = 'https://www.skool.com/ai-automation-agency-hub-8466?c=ae064b712f48404ca2b74634461c360e&s=newest-cm&fl=&p=3'
+    
+#     try:
+#         # Generate timestamp
+#         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         
-        # Scrape data
-        raw_data = scrape_data(url)
+#         # Scrape data
+#         raw_data = scrape_data(url)
         
-        # Save raw data
-        save_raw_data(raw_data, timestamp)
+#         # Save raw data
+#         save_raw_data(raw_data, timestamp)
         
-        # Format data
-        formatted_data = format_data(raw_data)
+#         # Format data
+#         formatted_data = format_data(raw_data)
         
-        # Save formatted data
-        save_formatted_data(formatted_data, timestamp)
-    except Exception as e:
-        print(f"An error occurred: {e}")
+#         # Save formatted data
+#         save_formatted_data(formatted_data, timestamp)
+#     except Exception as e:
+#         print(f"An error occurred: {e}")
